@@ -3,10 +3,12 @@ import './App.css';
 
 
 export const Actions = {
-  SET_SEAT_SELECTION: 'set_seat_selection',
   LOAD_SEATS: 'load_seats',
   SELECT_SEAT: 'select_seat',
-  FETCHING: 'fetching'
+  FETCHING: 'fetching',
+  FIELD_CHANGE: 'field_change',
+  FIELD_ERRORS: 'field_errors',
+  ERROR: 'error'
 };
 
 export function reducer(state, action) {
@@ -23,22 +25,36 @@ export function reducer(state, action) {
       }
   }
   switch(action.type) {
-    case Actions.SET_SEAT_SELECTION:
-      newState = cloneState(state);
-      newState.rows[action.row][action.col].selected = action.selection;
-      return newState;
     case Actions.SELECT_SEAT:
       newState = cloneState(state);
       newState.rows[action.row][action.col].selected = !newState.rows[action.row][action.col].selected;
+      newState.error = null;
       selected_seats(newState);
       return newState;
     case Actions.LOAD_SEATS:
-      newState = {...initialState, rows: action.rows, isLoading: false};
+      newState = {...state, rows: action.rows, isLoading: false, error: null};
       selected_seats(newState);
-      console.trace(newState);
+      // console.trace(newState);
       return newState;
     case Actions.FETCHING:
       return {...state, isLoading: true};
+    case Actions.FIELD_CHANGE:
+      newState = cloneState(state);
+      newState.fields = {...state.fields};
+      newState.fields[action.field] = {
+        value: action.value, error: null
+      };
+      return newState;
+    case Actions.ERROR:
+      newState = {...state, error: action.error, isLoading: false};
+      return newState;
+    case Actions.FIELD_ERRORS:
+      newState = {...state, isLoading: false};
+      newState.fields = {...state.fields};
+      newState.fields[action.field] = {
+        ...newState.fields[action.field], error: action.error
+      };
+      return newState;
     default:
       throw new Error();
   }
@@ -47,7 +63,22 @@ export const initialState = {
   rows: [],
   seats_selected: [],
   isLoading: false,
-  isError: false
+  isError: false,
+  fields: {
+    first_name: {
+      value: '', error: ''
+    },
+    last_name: {
+      value: '', error: ''
+    },
+    phone: {
+      value: '', error: ''
+    },
+    email: {
+      value: '', error: ''
+    }
+  },
+  error: null
 };
 
 function cloneState(state) {

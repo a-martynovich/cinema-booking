@@ -1,54 +1,12 @@
-import React, {useState, useReducer, useEffect, useContext} from 'react';
+import React, {useState, useReducer, useEffect, useContext, useRef} from 'react';
 import {render} from "react-dom";
 import {Actions, reducer, initialState, Dispatch} from './Reducer'
 import {ButtonGrid} from "./ButtonGrid";
+import {Form} from "./Form"
 import './App.css';
 
 
-function FormField(props) {
-  const [state, dispatch] = useContext(Dispatch);
-
-  let feedback_style, input_class;
-  if(props.valid === true) {
-    feedback_style = "valid-feedback";
-    input_class = "is-valid";
-  } else if(props.valid === false) {
-    feedback_style = "invalid-feedback";
-    input_class = "is-invalid";
-  } else {
-    feedback_style = "d-none";
-    input_class = "";
-  }
-  return (
-      <div className="form-group col-md-6">
-        <label htmlFor={props.id}>{props.label}</label>
-        <input type={props.type || "text"} className={`form-control ${input_class}`} placeholder={props.placeholder} id={props.id}/>
-        <div className={feedback_style}>
-          {props.feedback}
-        </div>
-      </div>
-  )
-}
-
-function Form(props) {
-  const [state, dispatch] = useContext(Dispatch);
-  const blurred = !state.seats_selected.length || state.isLoading;
-
-  return (
-      <form>
-        <fieldset disabled={blurred} style={ {filter: blurred? 'blur(1px)': 'none'} }>
-        <div className="form-row">
-          <FormField id="firstname" label="First Name" placeholder="First name" feedback="all ok" valid={true}/>
-          <FormField id="lastname" label="Last Name" placeholder="Last name" feedback="not ok" valid={false}/>
-        </div>
-        <div className="form-row">
-          <FormField id="email" label="E-Mail" placeholder="E-mail" />
-          <FormField id="phone" label="Phone No." placeholder="+1" />
-        </div>
-        </fieldset>
-      </form>
-  )
-}
+const URL = 'http://localhost:8000/booking/';
 
 function Alert(props) {
   return (
@@ -61,19 +19,9 @@ function Alert(props) {
 function BookButton(props) {
   const [state, dispatch] = useContext(Dispatch);
 
-  async function onClick() {
-      dispatch({type: Actions.FETCHING });
-
-      let res = await fetch('http://localhost:3000/rows');
-      let json = await res.json();
-      const rows = json;
-      console.log(rows);
-
-      dispatch({type: Actions.LOAD_SEATS, rows});
-  }
   return (
-      <button type="submit" className="btn btn-primary btn-lg"
-              disabled={!state.seats_selected.length} onClick={onClick}>
+      <button type="button" className="btn btn-primary btn-lg"
+              disabled={!state.seats_selected.length} onClick={props.onSubmit}>
         Book
       </button>
   )
@@ -81,15 +29,50 @@ function BookButton(props) {
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const formRef = useRef(null);
 
-  async function loadSeats() {
-      let res = await fetch('http://localhost:3000/rows');
-      let json = await res.json();
-      const rows = json;
-      console.log(rows);
+  const loadSeats = async () => {
+    let rows = [];
+      try {
+        let res = await fetch(URL);
+        let json = await res.json();
+        // console.log(json.rows);
+        rows = json.rows;
+        dispatch({type: Actions.LOAD_SEATS, rows});
+      } catch (e) {
+        dispatch({type: Actions.ERROR, e});
+      }
+  };
 
-      dispatch({type: Actions.LOAD_SEATS, rows});
-  }
+  const submit = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('SUBMIT');
+
+    dispatch({type: Actions.FETCHING });
+    console.log(state.fields);
+
+    let res = await fetch(URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        book_seats: state.seats_selected,
+        booking: state.fields
+      })
+    });
+    let json = await res.json();
+    console.log(json);
+    if(json.field_errors) {
+      dispatch({type: Actions.FIELD_ERRORS, errors: json.field_errors});
+      dispatch({type: Actions.ERROR, error: 'FIELD ERROR'})
+    } else if(json.error) {
+      dispatch({type: Actions.ERROR, error: json.error})
+    } else {
+      dispatch({type: Actions.LOAD_SEATS, rows: json.rows});
+    }
+  };
 
   useEffect(() => {
     loadSeats();
@@ -113,18 +96,20 @@ export default function App() {
 
                 <hr />
 
-                <Form disabled={false}/>
+                <form onSubmit={submit} action="">
+                  <Form />
+                  <input type="submit" style={{display: 'none'}}/>
+                </form>
 
-                <hr />
-                <div className="d-flex flex-nowrap">
-                  <div className="flex-shrink-1">
-                    <BookButton/>
+                  <hr />
+                  <div className="d-flex flex-nowrap">
+                    <div className="flex-shrink-1">
+                      <BookButton onSubmit={submit}/>
+                    </div>
+                    <div className="ml-1 w-100">
+                      <Alert text={state.error} color="danger" visible={state.error !== null}/>
+                    </div>
                   </div>
-                  <div className="ml-1 w-100">
-                    <Alert text="Welcome" color="danger" visible={false}/>
-                  </div>
-                </div>
-
               </div>
             </div>
           </div>

@@ -8,8 +8,6 @@ function Button(props) {
 
   function onSelect(e) {
     console.log(e);
-    // e.preventDefault();
-    // e.stopPropagation();
     dispatch({
       type: Actions.SELECT_SEAT,
       row: props.row,
@@ -17,15 +15,15 @@ function Button(props) {
     });
     e.target.blur();
   }
-  // console.log(state);
-  const color = myState.available? "light": "secondary";
   const active = myState.selected? "active": "";
+  const color = myState.available? "light": "secondary";
+  const text_color = myState.available? "": "text-secondary";
   return (
       <button type="button"
               style={{pointerEvents: myState.available? "unset": "none"}}
-              className={`btn btn-${color} ${active} rounded-0 border-secondary col text-nowrap`}
+              className={`btn btn-${color} ${active} rounded-0 border-secondary col text-nowrap ${text_color}`}
       onClick={onSelect}>
-        {myState.available? props.number: ""}
+        {myState.available? props.number: "x"}
       </button>
   )
 }
