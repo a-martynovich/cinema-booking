@@ -6,7 +6,7 @@ import {Form} from "./Form"
 import './App.css';
 
 
-const URL = 'http://localhost:8000/booking/';
+const URL = '/booking/';
 
 function arrays_equal(a, b) {
   return !!a && !!b && !(a<b || b<a);
