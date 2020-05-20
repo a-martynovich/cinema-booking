@@ -7,7 +7,6 @@ function Button(props) {
   let myState = state.rows.length? state.rows[props.row][props.col]: {};
 
   function onSelect(e) {
-    console.log(e);
     dispatch({
       type: Actions.SELECT_SEAT,
       row: props.row,
@@ -47,7 +46,7 @@ export function ButtonGrid(props) {
   const [state, dispatch] = useContext(Dispatch);
 
   return (
-      <div className="row mr-0 ml-0" style={ {
+      <div className="row mr-0 ml-0" data-testid="button-grid-div" style={ {
         filter: state.isLoading? 'blur(1px)': 'none',
         pointerEvents: state.isLoading? 'none': 'unset'
       } }>

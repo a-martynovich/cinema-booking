@@ -54,7 +54,6 @@ export default function App() {
         if(res.status != 200)
           throw new Error(`HTTP error: ${res.statusText}`);
         let json = await res.json();
-        console.log(json);
         let rows = json.rows, fields = json.booking;
         dispatch({type: Actions.LOAD_SEATS, rows, fields});
       } catch (e) {
