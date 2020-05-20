@@ -27,7 +27,7 @@ export function reducer(state, action) {
 
   switch(action.type) {
     case Actions.SELECT_SEAT:
-      newState = cloneState(state);
+      newState = {...cloneState(state), error: null, success: null};
       newState.rows[action.row][action.col].selected = !newState.rows[action.row][action.col].selected;
       newState.error = null;
       selected_seats(newState);
@@ -39,17 +39,20 @@ export function reducer(state, action) {
       selected_seats(newState);
       newState.have_booking = !!action.fields;
       newState.have_booked_seat = newState.seats_selected.length > 0 && newState.have_booking;
+      newState.booked_seats = [...newState.seats_selected];
       // console.trace(newState);
       return newState;
     case Actions.FETCHING:
-      return {...state, isLoading: true};
+      return {...state, isLoading: true, error: null, success: null};
     case Actions.FIELD_CHANGE:
-      newState = cloneState(state);
+      newState = {...state, error: null, success: null};
       newState.fields = {...state.fields};
       newState.fields[action.field] = action.value;
       return newState;
     case Actions.ERROR:
       newState = {...state, error: action.error, field_errors: action.field_errors, isLoading: false};
+      if(!action.error && !action.field_errors)
+        newState.success = true;
       return newState;
     default:
       throw new Error();
@@ -58,6 +61,7 @@ export function reducer(state, action) {
 export const initialState = {
   rows: [],
   seats_selected: [],
+  booked_seats: [],
   isLoading: false,
   isError: false,
   fields: {

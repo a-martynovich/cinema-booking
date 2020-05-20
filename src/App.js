@@ -8,17 +8,34 @@ import './App.css';
 
 const URL = 'http://localhost:8000/booking/';
 
+function arrays_equal(a, b) {
+  return !!a && !!b && !(a<b || b<a);
+}
+
 function Alert(props) {
+  const [state, dispatch] = useContext(Dispatch);
+
+  const text = state.success? "Success": state.error;
+  const visible = state.error || state.success? "": "d-none";
+  let color;
+  if(state.error)
+    color = "danger";
+  else if(state.success)
+    color = "success";
+  else
+    color="secondary";
   return (
-      <div className={`alert alert-${props.color} text-center ${props.visible? "": "d-none"}`} role="alert">
-        {props.text}
+      <div className={`alert alert-${color} text-center ${visible}`} role="alert">
+        {text}
       </div>
   )
 }
 
 function BookButton(props) {
   const [state, dispatch] = useContext(Dispatch);
-  const isDisabled = (!state.have_booked_seat && !state.seats_selected.length) || state.isLoading;
+  const isDisabled = (!state.have_booked_seat && !state.seats_selected.length) ||
+      state.isLoading ||
+      arrays_equal(state.seats_selected, state.booked_seats);
   const text = (state.have_booked_seat && !state.seats_selected.length)? "Unbook": "Book";
   return (
       <button type="button" className="btn btn-primary btn-lg"
@@ -49,9 +66,10 @@ export default function App() {
     e.preventDefault();
     e.stopPropagation();
     const data = {
-      book_seats: state.seats_selected,
-      booking: state.fields
+      book_seats: state.seats_selected
     };
+    if(state.seats_selected.length)
+      data.booking = state.fields;
     console.log('SUBMIT', data);
 
     dispatch({type: Actions.FETCHING });

@@ -10,16 +10,6 @@ function FormField(props) {
 
   let feedback_style, input_class,
       myError = state.field_errors && state.field_errors[props.id], errorText;
-  // if(props.valid === true) {
-  //   feedback_style = "valid-feedback";
-  //   input_class = "is-valid";
-  // } else if(props.valid === false) {
-  //   feedback_style = "invalid-feedback";
-  //   input_class = "is-invalid";
-  // } else {
-  //   feedback_style = "d-none";
-  //   input_class = "";
-  // }
   if(myError) {
     feedback_style = "invalid-feedback";
     input_class = "is-invalid";
