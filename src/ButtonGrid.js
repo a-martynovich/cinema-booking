@@ -32,7 +32,7 @@ function ButtonRow(props) {
   const [state, dispatch] = useContext(Dispatch);
 
   useEffect(() => {
-    console.log(state);
+    // console.log(state);
   });
   return (
       <>

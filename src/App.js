@@ -18,60 +18,70 @@ function Alert(props) {
 
 function BookButton(props) {
   const [state, dispatch] = useContext(Dispatch);
-
+  const isDisabled = (!state.have_booked_seat && !state.seats_selected.length) || state.isLoading;
+  const text = (state.have_booked_seat && !state.seats_selected.length)? "Unbook": "Book";
   return (
       <button type="button" className="btn btn-primary btn-lg"
-              disabled={!state.seats_selected.length} onClick={props.onSubmit}>
-        Book
+              disabled={isDisabled} onClick={props.onSubmit}>
+        {text}
       </button>
   )
 }
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const formRef = useRef(null);
 
   const loadSeats = async () => {
-    let rows = [];
       try {
         let res = await fetch(URL);
+        if(res.status != 200)
+          throw new Error(`HTTP error: ${res.statusText}`);
         let json = await res.json();
-        // console.log(json.rows);
-        rows = json.rows;
-        dispatch({type: Actions.LOAD_SEATS, rows});
+        console.log(json);
+        let rows = json.rows, fields = json.booking;
+        dispatch({type: Actions.LOAD_SEATS, rows, fields});
       } catch (e) {
-        dispatch({type: Actions.ERROR, e});
+        dispatch({type: Actions.ERROR, error: e.message});
       }
   };
 
   const submit = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('SUBMIT');
+    const data = {
+      book_seats: state.seats_selected,
+      booking: state.fields
+    };
+    console.log('SUBMIT', data);
 
     dispatch({type: Actions.FETCHING });
     console.log(state.fields);
 
-    let res = await fetch(URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        book_seats: state.seats_selected,
-        booking: state.fields
-      })
-    });
-    let json = await res.json();
-    console.log(json);
-    if(json.field_errors) {
-      dispatch({type: Actions.FIELD_ERRORS, errors: json.field_errors});
-      dispatch({type: Actions.ERROR, error: 'FIELD ERROR'})
-    } else if(json.error) {
-      dispatch({type: Actions.ERROR, error: json.error})
-    } else {
-      dispatch({type: Actions.LOAD_SEATS, rows: json.rows});
+    let json;
+    try {
+      let res = await fetch(URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+      if(res.status != 200)
+        throw new Error(`HTTP error: ${res.statusText}`);
+      json = await res.json();
+      console.log(json);
+    } catch(e) {
+      dispatch({type: Actions.ERROR, error: e.message});
+      return;
     }
+
+    dispatch({
+      type: Actions.ERROR,
+      error: json.error || null,
+      field_errors: json.field_errors? json.field_errors.booking: null
+    });
+    if(json.rows && !json.field_errors)
+      dispatch({type: Actions.LOAD_SEATS, rows: json.rows, fields: json.booking});
   };
 
   useEffect(() => {
@@ -83,7 +93,6 @@ export default function App() {
     <Dispatch.Provider value={[state, dispatch]}>
       <div className="cotainer">
         <div className="row justify-content-center">
-
           <div className="col-md-6">
             <div className="card bg-light shadow p-3 mb-5 bg-white rounded">
               <div className="card-body">
@@ -93,27 +102,23 @@ export default function App() {
                 <ButtonGrid/>
                 <h6 className="card-subtitle mt-2 text-muted">{seat_selection}</h6>
 
+                <hr />
+
+                <Form onSubmit={submit} />
 
                 <hr />
 
-                <form onSubmit={submit} action="">
-                  <Form />
-                  <input type="submit" style={{display: 'none'}}/>
-                </form>
-
-                  <hr />
-                  <div className="d-flex flex-nowrap">
-                    <div className="flex-shrink-1">
-                      <BookButton onSubmit={submit}/>
-                    </div>
-                    <div className="ml-1 w-100">
-                      <Alert text={state.error} color="danger" visible={state.error !== null}/>
-                    </div>
+                <div className="d-flex flex-nowrap">
+                  <div className="flex-shrink-1">
+                    <BookButton onSubmit={submit}/>
                   </div>
+                  <div className="ml-1 w-100">
+                    <Alert text={state.error} color="danger" visible={state.error !== null}/>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </Dispatch.Provider>

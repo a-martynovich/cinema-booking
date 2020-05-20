@@ -24,6 +24,7 @@ export function reducer(state, action) {
         }
       }
   }
+
   switch(action.type) {
     case Actions.SELECT_SEAT:
       newState = cloneState(state);
@@ -32,8 +33,12 @@ export function reducer(state, action) {
       selected_seats(newState);
       return newState;
     case Actions.LOAD_SEATS:
-      newState = {...state, rows: action.rows, isLoading: false, error: null};
+      newState = {...state, rows: action.rows, isLoading: false};
+      if(action.fields)
+        newState.fields = action.fields;
       selected_seats(newState);
+      newState.have_booking = !!action.fields;
+      newState.have_booked_seat = newState.seats_selected.length > 0 && newState.have_booking;
       // console.trace(newState);
       return newState;
     case Actions.FETCHING:
@@ -41,19 +46,10 @@ export function reducer(state, action) {
     case Actions.FIELD_CHANGE:
       newState = cloneState(state);
       newState.fields = {...state.fields};
-      newState.fields[action.field] = {
-        value: action.value, error: null
-      };
+      newState.fields[action.field] = action.value;
       return newState;
     case Actions.ERROR:
-      newState = {...state, error: action.error, isLoading: false};
-      return newState;
-    case Actions.FIELD_ERRORS:
-      newState = {...state, isLoading: false};
-      newState.fields = {...state.fields};
-      newState.fields[action.field] = {
-        ...newState.fields[action.field], error: action.error
-      };
+      newState = {...state, error: action.error, field_errors: action.field_errors, isLoading: false};
       return newState;
     default:
       throw new Error();
@@ -65,20 +61,15 @@ export const initialState = {
   isLoading: false,
   isError: false,
   fields: {
-    first_name: {
-      value: '', error: ''
-    },
-    last_name: {
-      value: '', error: ''
-    },
-    phone: {
-      value: '', error: ''
-    },
-    email: {
-      value: '', error: ''
-    }
+    first_name: '',
+    last_name: '',
+    phone: '',
+    email: ''
   },
-  error: null
+  field_errors: null,
+  error: null,
+  have_booking: false,
+  have_booked_seat: false
 };
 
 function cloneState(state) {
